@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Gourab Kumar Swain">
+  <title>Odisha Evapotranspiration Atlas | Interactive Micro-Level Decadal Decision Portal</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Canvas Confetti for Fun Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #0ea5e9;
+      --accent: #f59e0b;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --bg-dark: #0f172a;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-main);
+      background-color: #f1f5f9;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar Styling */
+    #sidebar {
+      width: 530px;
+      min-width: 480px;
+      height: 100vh;
+      background: white;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.07);
+      overflow-y: auto;
+    }
+
+    .header {
+      padding: 18px 22px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: white;
+      position: relative;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(37, 99, 235, 0.28);
+      border: 1px solid rgba(96, 165, 250, 0.45);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #93c5fd;
+    }
+
+    .sound-toggle-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      padding: 4px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .sound-toggle-btn:hover { background: rgba(255,255,255,0.22); }
+    .sound-toggle-btn.active { background: #10b981; border-color: #059669; }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 11.5px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--emerald); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-warning { background: var(--accent); color: white; }
+    .btn-warning:hover { background: #d97706; }
+
+    .btn-light {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: white;
+    }
+    .btn-light:hover { background: rgba(255, 255, 255, 0.24); }
+
+    /* Controls Panel */
+    .control-panel {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    /* Quick Search Input */
+    .search-group {
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-wrap i {
+      position: absolute;
+      left: 12px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 12px;
+      background: white;
+      outline: none;
+      font-weight: 600;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0; right: 0;
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      margin-top: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1500;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .search-item {
+      padding: 7px 12px;
+      font-size: 11.5px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+    }
+    .search-item:hover { background: #eff6ff; color: var(--primary); }
+
+    /* Block Chooser Highlight Box */
+    .block-selector-card {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 10px;
+    }
+
+    .block-selector-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #1d4ed8;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .control-group { margin-bottom: 8px; }
+
+    .control-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    select {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 12px;
+      background: white;
+      color: var(--text-main);
+      outline: none;
+      font-weight: 600;
+    }
+
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Policy Shortcuts / Quick Decision Filter Badges */
+    .policy-shortcuts-wrap {
+      margin-bottom: 10px;
+    }
+    .policy-shortcuts-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .policy-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .policy-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .policy-pill:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .policy-pill.active {
+      background: #1e293b;
+      color: white;
+      border-color: #0f172a;
+    }
+    .policy-pill.danger.active { background: #dc2626; border-color: #b91c1c; }
+    .policy-pill.warning.active { background: #ea580c; border-color: #c2410c; }
+    .policy-pill.millet.active { background: #7c3aed; border-color: #6d28d9; }
+    .policy-pill.buffer.active { background: #059669; border-color: #047857; }
+    .policy-pill.surplus.active { background: #0284c7; border-color: #0369a1; }
+
+    /* Layer Mode Pills */
+    .mode-pills {
+      display: flex;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 5px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #475569;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    /* KPI Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .kpi-card {
+      background: white;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+    }
+
+    .kpi-title {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 1px;
+    }
+
+    .kpi-value {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .kpi-sub {
+      font-size: 9.5px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* SIDEBAR TAB NAVIGATION */
+    .sidebar-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      padding: 4px 10px 0;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      padding: 8px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      border: none;
+      background: transparent;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover { color: #1e293b; }
+    .tab-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.04);
+      border-top: 2px solid var(--primary);
+    }
+
+    .tab-content {
+      padding: 14px 18px;
+      display: none;
+      flex-grow: 1;
+    }
+    .tab-content.active { display: block; }
+
+    /* Block Profile / Personality Card */
+    .personality-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .personality-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .badge-crucible { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .badge-shield { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .badge-delta { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc; }
+    .badge-millet { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+    .badge-basin { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+    .thirst-meter {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+    }
+
+    .info-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .info-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .info-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 11.5px;
+    }
+
+    .stat-label { color: var(--text-muted); }
+    .stat-val {
+      font-weight: 700;
+      color: #0f172a;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .trend-container {
+      position: relative;
+      height: 175px;
+      margin-top: 10px;
+      background: white;
+      border-radius: 8px;
+      padding: 6px;
+      border: 1px solid var(--border);
+    }
+
+    /* Decision Advisory Card */
+    .advisory-box {
+      background: #eff6ff;
+      border-left: 3px solid var(--primary);
+      border-radius: 0 6px 6px 0;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+    .advisory-title {
+      font-weight: 800;
+      color: #1e4ed8;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* CROP SIMULATOR TAB */
+    .simulator-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .sim-row {
+      margin-bottom: 10px;
+    }
+    .sim-slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .sim-slider-row input {
+      flex-grow: 1;
+      margin-right: 12px;
+    }
+
+    .water-tank-wrapper {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin: 12px 0;
+    }
+
+    .water-tank {
+      width: 44px;
+      height: 90px;
+      border: 2px solid #0f172a;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      background: #f1f5f9;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .water-liquid {
+      width: 100%;
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      transition: height 0.3s ease;
+    }
+
+    .sim-results-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .sim-res-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .sim-res-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .sim-saving-banner {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* DUAL BLOCK DUEL / COMPARE TAB */
+    .duel-selectors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .duel-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .duel-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .radar-container {
+      height: 200px;
+      position: relative;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px;
+      margin: 10px 0;
+    }
+    .duel-verdict {
+      background: #eff6ff;
+      border-left: 3px solid var(--primary);
+      padding: 10px;
+      border-radius: 0 6px 6px 0;
+      font-size: 11.5px;
+      line-height: 1.4;
+    }
+
+    /* Leaderboard Table */
+    .table-container {
+      max-height: 380px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th {
+      position: sticky; top: 0;
+      background: #f1f5f9; padding: 6px 8px;
+      text-align: left; font-weight: 700; color: #475569;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; }
+    tr:hover { background: #eff6ff; cursor: pointer; }
+
+    /* MAP CONTAINER & FLOATING WIDGETS */
+    #map-container {
+      flex-grow: 1;
+      height: 100vh;
+      position: relative;
+    }
+    #map { height: 100%; width: 100%; }
+
+    /* Floating Basemap Switcher */
+    .basemap-switcher-box {
+      position: absolute;
+      top: 14px; left: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      padding: 5px 7px;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      border: 1px solid var(--border);
+      display: flex; gap: 4px;
+    }
+    .basemap-opt-btn {
+      padding: 5px 9px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      transition: all 0.2s;
+    }
+    .basemap-opt-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .basemap-opt-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+    }
+
+    /* Floating Opacity & Map Tools */
+    .map-tools-box {
+      position: absolute;
+      top: 14px; right: 54px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      padding: 6px 11px;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; font-weight: 600;
+    }
+
+    /* Floating Creator Watermark Badge */
+    .creator-badge-box {
+      position: absolute;
+      top: 58px; left: 14px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 5px 12px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11.5px; color: #1e293b;
+    }
+
+    /* 🎮 FLOATING DECADAL TIME-LAPSE PLAYER (Bottom Center) */
+    .timelapse-player-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 8px 16px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: white;
+      min-width: 480px;
+    }
+
+    .tl-play-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .tl-play-btn:hover { background: var(--primary-dark); transform: scale(1.05); }
+
+    .tl-slider-wrap {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tl-header-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .tl-year-label {
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    .tl-slider {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .tl-climate-note {
+      font-size: 10px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+    }
+
+    /* Floating Legend */
+    .map-legend {
+      position: absolute;
+      bottom: 24px; right: 24px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      padding: 10px 14px;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      border: 1px solid var(--border);
+      min-width: 240px;
+    }
+    .legend-title {
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 5px;
+    }
+    .legend-bar { height: 9px; border-radius: 4px; margin-bottom: 5px; }
+    .legend-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; font-weight: 600; color: #475569;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 14px;
+      max-width: 1080px;
+      width: 100%;
+      max-height: 92vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      background: #0f172a;
+      color: white;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 {
+      font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    }
+    .modal-close {
+      background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer;
+    }
+    .modal-close:hover { color: white; }
+
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex-grow: 1;
+      line-height: 1.6;
+    }
+
+    .policy-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      padding: 14px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 14px;
+    }
+    .policy-box h4 {
+      color: #0f172a; font-size: 13.5px; margin-bottom: 5px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .policy-box p { color: #475569; font-size: 12.5px; }
+
+    /* Dossier Printable View */
+    .dossier-print-wrap {
+      border: 2px solid #0f172a;
+      padding: 24px;
+      border-radius: 8px;
+      background: white;
+    }
+    .dossier-header {
+      text-align: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .dossier-header h2 { font-size: 18px; font-weight: 800; }
+    .dossier-header p { font-size: 12px; color: #64748b; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #dossier-modal, #dossier-modal * { visibility: visible; }
+      #dossier-modal { position: absolute; left: 0; top: 0; width: 100%; }
+      .modal-header, .btn-print-hide { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="header">
+      <div class="header-top">
+        <div class="header-badge">
+          <i class="fa-solid fa-satellite"></i> State Hydrometeorological Atlas (ECMWF & ISRO)
+        </div>
+        <button class="sound-toggle-btn active" id="btn-sound-toggle" onclick="toggleAudioFeedback()">
+          <i class="fa-solid fa-volume-high"></i> <span id="sound-label">Audio On</span>
+        </button>
+      </div>
+
+      <h1>Odisha Evapotranspiration Atlas</h1>
+      <p>Decadal (2016–2026) Micro-level GIS Decision Portal across 30 Districts and 314 Administrative Blocks.</p>
+      
+      <div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.12); padding: 4px 11px; border-radius: 9999px; font-size: 11.5px; font-weight: 700; color: #f8fafc; border: 1px solid rgba(255,255,255,0.22);">
+        <i class="fa-solid fa-code" style="color: #60a5fa;"></i> Created by <span style="color: #67e8f9; font-weight: 800;">Gourab Kumar Swain</span>
+      </div>
+      
+      <div class="nav-actions">
+        <button class="btn btn-warning" onclick="openPolicyModal()">
+          <i class="fa-solid fa-scale-balanced"></i> Policy & Decision Guide
+        </button>
+        <button class="btn btn-primary" onclick="openAtlasModal()">
+          <i class="fa-solid fa-image"></i> View 4-Panel Atlas
+        </button>
+        <button class="btn btn-success" onclick="openDossierModal()">
+          <i class="fa-solid fa-file-lines"></i> Block Decision Dossier
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTROLS PANEL -->
+    <div class="control-panel">
+      <!-- Quick Search Bar -->
+      <div class="search-group">
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" id="quick-search" class="search-input" placeholder="Quick Search any Block or District..." oninput="handleSearch(this.value)">
+        </div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+
+      <!-- Dedicated Block Namewise Dropdown (All 314 Blocks) -->
+      <div class="block-selector-card">
+        <div class="block-selector-title">
+          <i class="fa-solid fa-location-dot"></i> Choose Block Name (Any District):
+        </div>
+        <select id="block-namewise-select" onchange="chooseBlockByName(this.value)">
+          <option value="" selected>-- Select Any Block from 314 Blocks --</option>
+        </select>
+      </div>
+
+      <!-- 1-Click Policy Presets (Decision Shortcuts) -->
+      <div class="policy-shortcuts-wrap">
+        <div class="policy-shortcuts-title">
+          <i class="fa-solid fa-filter"></i> 1-Click Decision-Maker Presets:
+        </div>
+        <div class="policy-pills">
+          <button class="policy-pill active" id="pill-all" onclick="applyPolicyPreset('ALL')">All 314 Blocks</button>
+          <button class="policy-pill danger" id="pill-extreme" onclick="applyPolicyPreset('EXTREME_THIRST')"><i class="fa-solid fa-fire"></i> Extreme Thirst (>1600mm)</button>
+          <button class="policy-pill warning" id="pill-deficit" onclick="applyPolicyPreset('CRITICAL_DEFICIT')"><i class="fa-solid fa-triangle-exclamation"></i> High Deficit (< -75mm)</button>
+          <button class="policy-pill millet" id="pill-millet" onclick="applyPolicyPreset('MILLET_PRIORITY')"><i class="fa-solid fa-wheat-awn"></i> Millet Priority</button>
+          <button class="policy-pill buffer" id="pill-buffer" onclick="applyPolicyPreset('FOREST_BUFFER')"><i class="fa-solid fa-tree"></i> Highland Shield (<1450mm)</button>
+          <button class="policy-pill surplus" id="pill-surplus" onclick="applyPolicyPreset('COASTAL_SURPLUS')"><i class="fa-solid fa-water"></i> Coastal Surplus (>+250mm)</button>
+        </div>
+      </div>
+
+      <!-- Layer Mode Pills -->
+      <div class="control-label">Geographic Scale</div>
+      <div class="mode-pills">
+        <button class="mode-btn active" id="btn-mode-district" onclick="switchMode('district')">
+          <i class="fa-solid fa-landmark"></i> 30 Districts
+        </button>
+        <button class="mode-btn" id="btn-mode-block" onclick="switchMode('block')">
+          <i class="fa-solid fa-cubes"></i> 314 Blocks
+        </button>
+      </div>
+
+      <div class="filter-grid">
+        <!-- Year Filter -->
+        <div class="control-group">
+          <label class="control-label" for="year-select">Filter Year (2016–2026)</label>
+          <select id="year-select" onchange="updateFilters()">
+            <option value="mean_10yr" selected>10-Year Normal (2016–2025)</option>
+            <option value="2025">Year 2025</option>
+            <option value="2024">Year 2024</option>
+            <option value="2023">Year 2023</option>
+            <option value="2022">Year 2022</option>
+            <option value="2021">Year 2021</option>
+            <option value="2020">Year 2020</option>
+            <option value="2019">Year 2019</option>
+            <option value="2018">Year 2018</option>
+            <option value="2017">Year 2017</option>
+            <option value="2016">Year 2016</option>
+            <option value="2026">Year 2026 (YTD)</option>
+          </select>
+        </div>
+
+        <!-- Metric Selector -->
+        <div class="control-group">
+          <label class="control-label" for="metric-select">Geospatial Parameter</label>
+          <select id="metric-select" onchange="updateFilters()">
+            <option value="annual_et0_mm" selected>Annual ET₀ (mm/yr)</option>
+            <option value="summer_et0_mm">Summer ET₀ (Mar–May)</option>
+            <option value="monsoon_et0_mm">Monsoon ET₀ (Jun–Sep)</option>
+            <option value="winter_et0_mm">Winter ET₀ (Dec–Feb)</option>
+            <option value="water_balance_mm">Water Balance (P - ET₀)</option>
+            <option value="annual_precip_mm">Annual Rainfall (mm)</option>
+            <option value="aridity_index">Aridity Index (P / ET₀)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- District Narrowing Filter -->
+      <div class="control-group" id="district-filter-group" style="display: none;">
+        <label class="control-label" for="district-filter-select">Narrow Blocks by District</label>
+        <select id="district-filter-select" onchange="filterBlocksByDistrict()">
+          <option value="ALL" selected>All 30 Districts (Show All 314 Blocks)</option>
+        </select>
+      </div>
+
+      <!-- Summary KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Statewide Mean ET₀</div>
+          <div class="kpi-value" id="kpi-mean-et">1,509 mm</div>
+          <div class="kpi-sub" id="kpi-anomaly">10-Yr Decadal Normal</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Peak Evaporation Zone</div>
+          <div class="kpi-value" id="kpi-highest-name">Sohela (Bargarh)</div>
+          <div class="kpi-sub" id="kpi-highest-val">1,636 mm</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Lowest Evaporation Zone</div>
+          <div class="kpi-value" id="kpi-lowest-name">Samakhunta (Mayurbhanj)</div>
+          <div class="kpi-sub" id="kpi-lowest-val">1,363 mm</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">State Water Balance</div>
+          <div class="kpi-value" id="kpi-balance-val">+158 mm</div>
+          <div class="kpi-sub" id="kpi-balance-label">Mean Surplus Buffer</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR TAB HEADERS -->
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="switchSidebarTab('profile')">
+        <i class="fa-solid fa-chart-line"></i> Block Profile
+      </button>
+      <button class="tab-btn" onclick="switchSidebarTab('simulator')">
+        <i class="fa-solid fa-seedling"></i> Crop Simulator
+      </button>
+      <button class="tab-btn" onclick="switchSidebarTab('duel')">
+        <i class="fa-solid fa-code-compare"></i> Block Duel
+      </button>
+      <button class="tab-btn" onclick="switchSidebarTab('leaderboard')">
+        <i class="fa-solid fa-ranking-star"></i> Ranking
+      </button>
+    </div>
+
+    <!-- TAB 1: BLOCK PROFILE & DECISION ADVISORY -->
+    <div class="tab-content active" id="tab-profile">
+      <div class="info-card">
+        <div class="personality-badge-row">
+          <span class="personality-badge badge-crucible" id="info-personality-badge">
+            <i class="fa-solid fa-fire"></i> Solar Crucible Belt
+          </span>
+          <div class="thirst-meter" id="info-thirst-meter">
+            <span style="font-size: 10px; font-weight: 700; color: #64748b; margin-right: 3px;">Thirst Rating:</span>
+            <span id="thirst-icons">🔥🔥🔥🔥🔥</span>
+          </div>
+        </div>
+
+        <div class="info-header">
+          <span class="info-title" id="info-name">Hover / Click Location</span>
+          <span style="font-size: 10.5px; background: #e0e7ff; color: #3730a3; padding: 2px 7px; border-radius: 4px; font-weight: 700;" id="info-badge">District: --</span>
+        </div>
+        
+        <div class="stat-row">
+          <span class="stat-label">Selected Year Value</span>
+          <span class="stat-val" id="stat-selected-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">10-Year Decadal Normal</span>
+          <span class="stat-val" id="stat-normal-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Pre-Monsoon Summer (Mar–May)</span>
+          <span class="stat-val" id="stat-summer-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Southwest Monsoon (Jun–Sep)</span>
+          <span class="stat-val" id="stat-monsoon-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Annual Rainfall</span>
+          <span class="stat-val" id="stat-rain-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Water Balance (P - ET₀)</span>
+          <span class="stat-val" id="stat-balance-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Aridity Index (P / ET₀)</span>
+          <span class="stat-val" id="stat-aridity-val">--</span>
+        </div>
+
+        <!-- 10-Year Trend Chart -->
+        <div class="trend-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+
+        <!-- Decision Advisory Box -->
+        <div class="advisory-box" id="info-advisory-box">
+          <div class="advisory-title">
+            <i class="fa-solid fa-lightbulb"></i> Micro-Level Administrative Action:
+          </div>
+          <div id="info-advisory-text">
+            Select any block to generate real-time irrigation, crop choice, and reservoir allocation recommendations.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CROP WATER & IRRIGATION SIMULATOR -->
+    <div class="tab-content" id="tab-simulator">
+      <div class="simulator-container">
+        <h4 style="font-size: 13.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+          <i class="fa-solid fa-calculator"></i> Crop Evaporation & Water Savings Calculator
+        </h4>
+        <p style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
+          Calculates real-time crop evapotranspiration ($ET_c = K_c \times ET_0$) and freshwater savings for the currently selected block: <b id="sim-current-block-name">Sohela</b>.
+        </p>
+
+        <div class="sim-row">
+          <label class="control-label" for="sim-crop-select">Select Crop to Simulate:</label>
+          <select id="sim-crop-select" onchange="runCropSimulation()">
+            <option value="boro_paddy" selected>Summer Boro Paddy (Kc = 1.20 | Extreme Thirst)</option>
+            <option value="kharif_paddy">Kharif Season Paddy (Kc = 1.05 | Moderate)</option>
+            <option value="mandia_ragi">Mandia / Finger Millet (Kc = 0.70 | Odisha Millet Mission)</option>
+            <option value="greengram">Greengram / Moong (Kc = 0.65 | Low Water Legume)</option>
+            <option value="sesamum">Sesamum / Til (Kc = 0.70 | Drought Hardy Oilseed)</option>
+            <option value="maize">Maize / Sweet Corn (Kc = 0.85 | Moderate Cereal)</option>
+            <option value="sugarcane">Sugarcane (Kc = 1.25 | Heavy Commercial Consumer)</option>
+          </select>
+        </div>
+
+        <div class="sim-row">
+          <div class="control-label">Farm Cultivated Area:</div>
+          <div class="sim-slider-row">
+            <input type="range" id="sim-area-slider" min="1" max="50" step="1" value="5" oninput="runCropSimulation()">
+            <span style="font-size: 13px; font-weight: 800; font-family: monospace; color: var(--primary);" id="sim-area-val">5 Acres</span>
+          </div>
+        </div>
+
+        <!-- Animated Water Tank Widget -->
+        <div class="water-tank-wrapper">
+          <div class="water-tank">
+            <div class="water-liquid" id="sim-water-liquid" style="height: 85%;"></div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b;">Atmospheric Water Consumption:</div>
+            <div style="font-size: 18px; font-weight: 800; color: #0f172a; font-family: monospace;" id="sim-consumption-liters">
+              -- Million Liters
+            </div>
+            <div style="font-size: 10px; color: #0284c7; font-weight: 600;" id="sim-tank-status">High Reservoir Drawdown</div>
+          </div>
+        </div>
+
+        <div class="sim-results-grid">
+          <div class="sim-res-card">
+            <div class="kpi-title">Crop ET (ETc)</div>
+            <div class="sim-res-val" id="sim-etc-val">-- mm</div>
+          </div>
+          <div class="sim-res-card">
+            <div class="kpi-title">Irrigation Volume</div>
+            <div class="sim-res-val" id="sim-vol-m3">-- m³</div>
+          </div>
+        </div>
+
+        <div class="sim-saving-banner" id="sim-saving-banner">
+          <i class="fa-solid fa-droplet-slash" style="font-size: 18px;"></i>
+          <span id="sim-saving-text">Switching to Mandia/Ragi saves millions of liters of water!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DUAL BLOCK DUEL / COMPARISON -->
+    <div class="tab-content" id="tab-duel">
+      <div class="duel-selectors">
+        <div class="duel-card">
+          <div class="duel-title" style="color: #ea580c;"><i class="fa-solid fa-cube"></i> Block Alpha:</div>
+          <select id="duel-select-a" onchange="runDuelComparison()"></select>
+        </div>
+        <div class="duel-card">
+          <div class="duel-title" style="color: #0284c7;"><i class="fa-solid fa-cube"></i> Block Beta:</div>
+          <select id="duel-select-b" onchange="runDuelComparison()"></select>
+        </div>
+      </div>
+
+      <div class="radar-container">
+        <canvas id="duelRadarChart"></canvas>
+      </div>
+
+      <div class="duel-verdict" id="duel-verdict-box">
+        <b>Comparative Analysis:</b> Comparing atmospheric thirst and water balance deltas...
+      </div>
+    </div>
+
+    <!-- TAB 4: LEADERBOARD -->
+    <div class="tab-content" id="tab-leaderboard">
+      <div style="font-size: 12px; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between;">
+        <span><i class="fa-solid fa-ranking-star"></i> Ranking of All 314 Blocks</span>
+        <span style="font-size: 10.5px; color: var(--text-muted);">Click row to zoom</span>
+      </div>
+      <div class="table-container">
+        <table id="leaderboard-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Block Name</th>
+              <th>ET₀ (mm)</th>
+              <th>P - ET₀</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sidebar Bottom Creator Footer -->
+    <div style="padding: 10px 18px; border-top: 1px solid var(--border); background: #fafafa; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; align-items: center;">
+      <span><i class="fa-solid fa-code" style="color: var(--primary);"></i> Created by: <b style="color: #0f172a;">Gourab Kumar Swain</b></span>
+      <span style="font-size: 10px; font-weight: 600;">Odisha Decadal GIS Atlas</span>
+    </div>
+  </div>
+
+  <!-- MAP CONTAINER -->
+  <div id="map-container">
+    <div id="map"></div>
+
+    <!-- Floating Creator Watermark Badge -->
+    <div class="creator-badge-box">
+      <i class="fa-solid fa-compass-drafting" style="color: #2563eb;"></i>
+      <span>Created by <b>Gourab Kumar Swain</b></span>
+      <span style="color: #94a3b8; font-size: 10px;">&bull; Odisha ET Atlas</span>
+    </div>
+
+    <!-- Floating Basemap Modes Switcher -->
+    <div class="basemap-switcher-box">
+      <button class="basemap-opt-btn active" id="btn-bm-satellite" onclick="setBasemap('satellite')">
+        <i class="fa-solid fa-satellite"></i> Satellite
+      </button>
+      <button class="basemap-opt-btn" id="btn-bm-topo" onclick="setBasemap('topo')">
+        <i class="fa-solid fa-mountain"></i> Terrain
+      </button>
+      <button class="basemap-opt-btn" id="btn-bm-light" onclick="setBasemap('light')">
+        <i class="fa-solid fa-sun"></i> Clean Light
+      </button>
+      <button class="basemap-opt-btn" id="btn-bm-dark" onclick="setBasemap('dark')">
+        <i class="fa-solid fa-moon"></i> Dark Canvas
+      </button>
+      <button class="basemap-opt-btn" id="btn-bm-osm" onclick="setBasemap('osm')">
+        <i class="fa-solid fa-map"></i> Streets
+      </button>
+    </div>
+
+    <!-- Floating Map Tools -->
+    <div class="map-tools-box">
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <span>Opacity:</span>
+        <input type="range" id="opacity-slider" min="0.2" max="1.0" step="0.05" value="0.85" style="width: 70px;" oninput="changeLayerOpacity(this.value)">
+      </div>
+      <button class="btn btn-light" style="background: #f1f5f9; color: #0f172a; padding: 4px 8px; font-size: 11px;" onclick="resetMapView()">
+        <i class="fa-solid fa-arrows-to-eye"></i> Focus Odisha
+      </button>
+    </div>
+
+    <!-- 🎮 FLOATING DECADAL TIME-LAPSE PLAYER (Bottom Center) -->
+    <div class="timelapse-player-bar">
+      <button class="tl-play-btn" id="tl-play-btn" onclick="toggleTimeLapse()">
+        <i class="fa-solid fa-play" id="tl-play-icon"></i>
+      </button>
+      <div class="tl-slider-wrap">
+        <div class="tl-header-row">
+          <span>Decadal Time-Lapse Player</span>
+          <span class="tl-year-label" id="tl-year-display">10-Yr Normal</span>
+        </div>
+        <input type="range" class="tl-slider" id="tl-slider" min="0" max="11" step="1" value="0" oninput="scrubTimeLapse(this.value)">
+        <div class="tl-climate-note" id="tl-climate-note">10-Year Decadal Climatological Normal Baseline (2016–2025)</div>
+      </div>
+    </div>
+
+    <!-- Floating Map Legend -->
+    <div class="map-legend">
+      <div class="legend-title" id="legend-metric-title">Annual Reference ET₀ (mm/yr)</div>
+      <div class="legend-bar" id="legend-gradient"></div>
+      <div class="legend-labels">
+        <span id="legend-min">1360 mm</span>
+        <span id="legend-mid">1510 mm</span>
+        <span id="legend-max">1660 mm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: POLICY & DECISION MAKING GUIDE -->
+  <div class="modal-overlay" id="policy-modal" onclick="closeModalOnOverlay(event, 'policy-modal')">
+    <div class="modal-content" style="max-width: 980px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-scale-balanced"></i> Micro-Level Administrative Decision Support Framework</h3>
+        <button class="modal-close" onclick="closePolicyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="policy-box" style="border-left-color: #2563eb;">
+          <h4><i class="fa-solid fa-water"></i> 1. Department of Water Resources: Canal & Reservoir Scheduling</h4>
+          <p>
+            <b>Tail-End Evaporative Conveyance Loss:</b> In Western Odisha canals (Hirakud Bargarh canal system, Upper Indravati), ambient heat (>42°C) causes 18% to 24% of canal discharge to evaporate during March–May. Releases must add a <b>+20% evaporative multiplier for tail-end blocks (Sohela, Bijepur, Barpali)</b>. Mandate nocturnal rotational canal operation (19:00 to 06:00) to cut convective loss by up to 35%.
+          </p>
+        </div>
+
+        <div class="policy-box" style="border-left-color: #7c3aed;">
+          <h4><i class="fa-solid fa-wheat-awn"></i> 2. Agriculture Dept & Odisha Millet Mission: Micro-Level Crop Substitution</h4>
+          <p>
+            <b>Phase-out Summer Boro Paddy in Top 10 Deficit Blocks:</b> Boro paddy consumes 6,960 m³/ha. Substituting with <b>Mandia (Finger Millet / Ragi)</b> or <b>Moong (Greengram)</b> reduces water demand to 3,450–4,060 m³/ha, returning <b>2,900 to 3,510 m³ of freshwater per hectare</b> to community aquifers. Target: 60% transition in Komna, Boden, Bhawanipatna, Sohela, and Patnagarh.
+          </p>
+        </div>
+
+        <div class="policy-box" style="border-left-color: #ea580c;">
+          <h4><i class="fa-solid fa-trowel-bricks"></i> 3. Panchayati Raj / MGNREGS: Farm Pond ("Mo Pokhari") Engineering Standards</h4>
+          <p>
+            <b>Eliminating Shallow Evaporation Sinks:</b> Western Odisha loses ~1.62m of depth to annual evaporation. Standard 2.0m ponds lose 80% of stored water. Revised engineering mandate: <b>excavate to minimum 3.5 to 4.0 meters</b> with bamboo/neem windbreaks on the southwest banks to suppress convective surface evaporation by 20–28%.
+          </p>
+        </div>
+
+        <div class="policy-box" style="border-left-color: #dc2626;">
+          <h4><i class="fa-solid fa-triangle-exclamation"></i> 4. OSDMA: Flash Drought & Atmospheric Thirst Early Warning</h4>
+          <p>
+            <b>SPEI Metric Integration:</b> Incorporate Vapor Pressure Deficit and daily ET₀ spikes (>8.2 mm/day) into heat action plans to detect rapid root-zone desiccation before conventional rainfall indices register agricultural drought.
+          </p>
+        </div>
+
+        <div class="policy-box" style="border-left-color: #059669;">
+          <h4><i class="fa-solid fa-tree"></i> 5. Similipal & Eastern Ghats: Ecological Headwater Buffers</h4>
+          <p>
+            Dense canopy cover in Mayurbhanj and Koraput plateaus suppresses ET₀ by up to 270 mm/yr compared to Western plains. Protecting highland canopy preserves the natural orographic sponge that feeds Odisha's major river basins (Subarnarekha, Baitarani, Kolab).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: 4-PANEL ATLAS DETAILED VIEWER -->
+  <div class="modal-overlay" id="atlas-modal" onclick="closeModalOnOverlay(event, 'atlas-modal')">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-image"></i> High-Resolution 4-Panel Cartographic Atlas (300 DPI Decadal Analysis)</h3>
+        <button class="modal-close" onclick="closeAtlasModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+          <button class="btn btn-light" style="background: #1e293b; color: white;" onclick="zoomAtlas(1.25)">
+            <i class="fa-solid fa-magnifying-glass-plus"></i> Zoom In
+          </button>
+          <button class="btn btn-light" style="background: #1e293b; color: white;" onclick="zoomAtlas(0.8)">
+            <i class="fa-solid fa-magnifying-glass-minus"></i> Zoom Out
+          </button>
+          <button class="btn btn-light" style="background: #1e293b; color: white;" onclick="resetAtlasZoom()">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+          <a class="btn btn-primary" href="odisha_evapotranspiration_maps.png" download="Odisha_Evapotranspiration_Decadal_Atlas_300DPI.png">
+            <i class="fa-solid fa-download"></i> Download Full 300 DPI PNG
+          </a>
+        </div>
+        <div style="overflow: auto; max-height: 72vh; background: #0b1120; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 10px;">
+          <img src="odisha_evapotranspiration_maps.png" id="atlas-img" style="max-width: 100%; transition: transform 0.2s ease;" alt="Odisha 4-Panel Atlas">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PRINTABLE BLOCK DECISION DOSSIER -->
+  <div class="modal-overlay" id="dossier-modal" onclick="closeModalOnOverlay(event, 'dossier-modal')">
+    <div class="modal-content" style="max-width: 820px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-invoice"></i> Administrative Decision Dossier</h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-primary btn-print-hide" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> Print / Save PDF
+          </button>
+          <button class="modal-close" onclick="closeDossierModal()">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="dossier-print-wrap" id="dossier-print-content">
+          <div class="dossier-header">
+            <h2>GOVERNMENT OF ODISHA</h2>
+            <p>Department of Water Resources & Department of Agriculture & Farmers' Empowerment</p>
+            <h3 style="margin-top: 8px; color: var(--primary);" id="dos-block-title">BLOCK HYDROLOGICAL PROFILE & INTERVENTION DOSSIER</h3>
+            <p style="font-size: 11px; margin-top: 4px;">
+              <b>Created by Gourab Kumar Swain</b> &bull; Decadal Baseline: 2016–2026 ECMWF ERA5-Land Penman-Monteith Reanalysis
+            </p>
+          </div>
+
+          <table style="margin-bottom: 14px;">
+            <tr>
+              <td style="font-weight: 700; width: 35%;">Administrative Block / District:</td>
+              <td id="dos-name-val" style="font-weight: 800;">--</td>
+              <td style="font-weight: 700; width: 25%;">Hydrological Tier:</td>
+              <td id="dos-tier-val" style="font-weight: 800;">--</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700;">Annual Reference ET₀:</td>
+              <td id="dos-et-val">-- mm</td>
+              <td style="font-weight: 700;">Annual Precipitation:</td>
+              <td id="dos-rain-val">-- mm</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700;">Pre-Monsoon Summer ET₀:</td>
+              <td id="dos-summer-val">-- mm</td>
+              <td style="font-weight: 700;">Net Water Balance:</td>
+              <td id="dos-balance-val">-- mm</td>
+            </tr>
+          </table>
+
+          <h4 style="font-size: 13px; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">
+            Targeted Field Directives:
+          </h4>
+          <ul style="font-size: 12px; line-height: 1.6; padding-left: 20px; color: #1e293b;" id="dos-directives-list">
+            <li><b>Canal Water Scheduling:</b> Adjust seasonal releases for conveyance evaporative losses.</li>
+            <li><b>Cropping Pattern Directive:</b> Promote finger millet (Mandia) and pulses over summer paddy.</li>
+            <li><b>Water Harvesting:</b> Mandate minimum 3.5m excavation depth for farm ponds.</li>
+          </ul>
+
+          <div style="margin-top: 20px; font-size: 10.5px; color: #64748b; display: flex; justify-content: space-between; align-items: center;">
+            <span><b>Created & Analyzed by:</b> Gourab Kumar Swain &bull; Lead Hydrological GIS Analyst</span>
+            <span>Generated from Odisha Evapotranspiration Atlas &bull; Official Use</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentMode = 'district';
+    let currentYear = 'mean_10yr';
+    let currentMetric = 'annual_et0_mm';
+    let currentDistrictFilter = 'ALL';
+    let currentPolicyPreset = 'ALL';
+    let layerOpacity = 0.85;
+
+    let map, districtLayer, blockLayer;
+    let baseLayers = {};
+    let activeBasemap = 'satellite';
+
+    let districtGeoData = null;
+    let blockGeoData = null;
+    let allBlocksList = [];
+    let trendChart = null;
+    let duelRadarChart = null;
+    let currentSelectedProps = null;
+    let atlasScale = 1.0;
+
+    // Time-Lapse Player State
+    const timeLapseYears = ['mean_10yr', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
+    const timeLapseNotes = {
+      'mean_10yr': '10-Year Decadal Climatological Normal Baseline (2016–2025)',
+      '2016': '2016: Moderate evaporative demand; post-El Niño transitional moisture profile.',
+      '2017': '2017: Healthy monsoon recharge across Central and Northern Odisha.',
+      '2018': '2018: Elevated pre-monsoon heat; intense summer evaporative stress in Western belt.',
+      '2019': '2019: Active cyclonic rainfalls; high post-monsoon soil moisture retention.',
+      '2020': '2020: Lowest annual ET₀ (1,441 mm); extensive cloud cover suppressing solar demand.',
+      '2021': '2021: Balanced hydrometeorological season; near-normal decadal evaporative index.',
+      '2022': '2022: Rising temperature anomalies; +3.5% spike in annual evaporative demand.',
+      '2023': '2023: Severe atmospheric thirst (+4.5% ET₀); mid-season agricultural flash drought.',
+      '2024': '2024: High monsoon precipitation (+279 mm surplus) replenishing Western aquifers.',
+      '2025': '2025: Near-normal decadal conditions across all 30 districts.',
+      '2026': '2026 (YTD): Current ongoing hydrometeorological observation cycle.'
+    };
+    let isPlayingTimeLapse = false;
+    let timeLapseInterval = null;
+
+    // Audio Synthesis Feedback
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq = 520, type = 'sine', duration = 0.08) {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleAudioFeedback() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('btn-sound-toggle');
+      const lbl = document.getElementById('sound-label');
+      if (audioEnabled) {
+        btn.classList.add('active');
+        lbl.textContent = 'Audio On';
+        playTone(600, 'sine', 0.1);
+      } else {
+        btn.classList.remove('active');
+        lbl.textContent = 'Audio Muted';
+      }
+    }
+
+    // Metric Definitions
+    const metricConfigs = {
+      annual_et0_mm: {
+        label: 'Annual Reference ET₀ (mm/yr)',
+        min: 1360, max: 1660, unit: 'mm',
+        colorScale: ['#fef08a', '#f97316', '#dc2626', '#7f1d1d'],
+        cssGradient: 'linear-gradient(to right, #fef08a, #f97316, #dc2626, #7f1d1d)'
+      },
+      summer_et0_mm: {
+        label: 'Summer ET₀ (Mar–May, mm)',
+        min: 440, max: 585, unit: 'mm',
+        colorScale: ['#e9d5ff', '#c084fc', '#e11d48', '#881337'],
+        cssGradient: 'linear-gradient(to right, #e9d5ff, #c084fc, #e11d48, #881337)'
+      },
+      monsoon_et0_mm: {
+        label: 'Monsoon Season ET₀ (Jun–Sep, mm)',
+        min: 460, max: 540, unit: 'mm',
+        colorScale: ['#99f6e4', '#14b8a6', '#0f766e', '#134e4a'],
+        cssGradient: 'linear-gradient(to right, #99f6e4, #14b8a6, #0f766e, #134e4a)'
+      },
+      winter_et0_mm: {
+        label: 'Winter Season ET₀ (Dec–Feb, mm)',
+        min: 240, max: 330, unit: 'mm',
+        colorScale: ['#bae6fd', '#38bdf8', '#0284c7', '#0369a1'],
+        cssGradient: 'linear-gradient(to right, #bae6fd, #38bdf8, #0284c7, #0369a1)'
+      },
+      water_balance_mm: {
+        label: 'Water Balance (P - ET₀, mm)',
+        min: -350, max: 350, unit: 'mm',
+        colorScale: ['#b91c1c', '#f87171', '#93c5fd', '#1d4ed8'],
+        cssGradient: 'linear-gradient(to right, #b91c1c, #f87171, #93c5fd, #1d4ed8)'
+      },
+      annual_precip_mm: {
+        label: 'Annual Total Rainfall (mm)',
+        min: 1100, max: 1900, unit: 'mm',
+        colorScale: ['#fef3c7', '#6ee7b7', '#3b82f6', '#1e3a8a'],
+        cssGradient: 'linear-gradient(to right, #fef3c7, #6ee7b7, #3b82f6, #1e3a8a)'
+      },
+      aridity_index: {
+        label: 'Aridity Index (P / ET₀)',
+        min: 0.75, max: 1.25, unit: '',
+        colorScale: ['#ef4444', '#f59e0b', '#10b981', '#065f46'],
+        cssGradient: 'linear-gradient(to right, #ef4444, #f59e0b, #10b981, #065f46)'
+      }
+    };
+
+    // Crop Coefficient Specifications
+    const cropCoefficients = {
+      boro_paddy: { name: 'Summer Boro Paddy', kc: 1.20, seasonDays: 110, risk: 'extreme' },
+      kharif_paddy: { name: 'Kharif Season Paddy', kc: 1.05, seasonDays: 120, risk: 'moderate' },
+      mandia_ragi: { name: 'Mandia / Finger Millet', kc: 0.70, seasonDays: 105, risk: 'low' },
+      greengram: { name: 'Greengram / Moong', kc: 0.65, seasonDays: 70, risk: 'low' },
+      sesamum: { name: 'Sesamum / Til', kc: 0.70, seasonDays: 85, risk: 'low' },
+      maize: { name: 'Maize / Sweet Corn', kc: 0.85, seasonDays: 100, risk: 'moderate' },
+      sugarcane: { name: 'Sugarcane', kc: 1.25, seasonDays: 330, risk: 'heavy' }
+    };
+
+    function initMap() {
+      map = L.map('map', {
+        center: [20.4, 84.4],
+        zoom: 7,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // Basemap Providers
+      baseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+      baseLayers.topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+      baseLayers.light = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+      baseLayers.dark = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+      baseLayers.osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+
+      baseLayers.satellite.addTo(map);
+
+      initCharts();
+      loadDatasets();
+    }
+
+    function setBasemap(mode) {
+      if (baseLayers[activeBasemap]) map.removeLayer(baseLayers[activeBasemap]);
+      activeBasemap = mode;
+      baseLayers[mode].addTo(map);
+
+      if (districtLayer) districtLayer.bringToFront();
+      if (blockLayer) blockLayer.bringToFront();
+
+      document.querySelectorAll('.basemap-opt-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-bm-${mode}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      playTone(480, 'sine', 0.05);
+    }
+
+    function changeLayerOpacity(val) {
+      layerOpacity = parseFloat(val);
+      if (districtLayer) districtLayer.setStyle({ fillOpacity: layerOpacity });
+      if (blockLayer) blockLayer.setStyle({ fillOpacity: layerOpacity });
+    }
+
+    function resetMapView() {
+      map.setView([20.4, 84.4], 7);
+      playTone(400, 'sine', 0.05);
+    }
+
+    async function loadDatasets() {
+      try {
+        const distResp = await fetch('odisha_districts_10year_evapotranspiration.geojson');
+        districtGeoData = await distResp.json();
+
+        // Populate district filter select
+        const dselect = document.getElementById('district-filter-select');
+        const dnames = districtGeoData.features.map(f => f.properties.district || f.properties.dtname).sort();
+        dnames.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          dselect.appendChild(opt);
+        });
+
+        renderActiveLayer();
+
+        // Fetch 314 blocks
+        const blockResp = await fetch('odisha_blocks_evapotranspiration.geojson');
+        blockGeoData = await blockResp.json();
+
+        populateBlockDropdown();
+        populateDuelSelectors();
+        runCropSimulation();
+      } catch (err) {
+        console.error('Error loading datasets:', err);
+      }
+    }
+
+    function populateBlockDropdown() {
+      const bselect = document.getElementById('block-namewise-select');
+      bselect.innerHTML = '<option value="" selected>-- Select Any Block from 314 Blocks --</option>';
+
+      if (!blockGeoData) return;
+
+      allBlocksList = blockGeoData.features.map(f => ({
+        block: f.properties.block,
+        district: f.properties.district,
+        label: `${f.properties.block} (${f.properties.district})`,
+        feature: f
+      }));
+
+      let filtered = allBlocksList;
+      if (currentDistrictFilter !== 'ALL') {
+        filtered = allBlocksList.filter(b => b.district === currentDistrictFilter);
+      }
+
+      filtered.sort((a, b) => a.block.localeCompare(b.block));
+
+      filtered.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = `${b.block}|${b.district}`;
+        opt.textContent = b.label;
+        bselect.appendChild(opt);
+      });
+    }
+
+    function chooseBlockByName(val) {
+      if (!val) return;
+      const [blockName, distName] = val.split('|');
+
+      if (currentMode !== 'block') switchMode('block');
+
+      if (!blockGeoData) return;
+      const targetFeature = blockGeoData.features.find(f => 
+        f.properties.block.toLowerCase() === blockName.toLowerCase() &&
+        f.properties.district.toLowerCase() === distName.toLowerCase()
+      );
+
+      if (targetFeature) {
+        const targetBounds = L.geoJSON(targetFeature).getBounds();
+        map.flyToBounds(targetBounds, { padding: [40, 40], maxZoom: 11, duration: 1.2 });
+        updateDetailCard(targetFeature.properties);
+        playTone(650, 'sine', 0.1);
+
+        // Highlight
+        if (blockLayer) {
+          blockLayer.eachLayer(layer => {
+            if (layer.feature && layer.feature.properties.block === blockName && layer.feature.properties.district === distName) {
+              layer.setStyle({ weight: 3.5, color: '#ffffff', fillOpacity: 0.98 });
+              layer.bringToFront();
+              layer.openTooltip();
+            } else {
+              blockLayer.resetStyle(layer);
+            }
+          });
+        }
+      }
+    }
+
+    // 1-Click Policy Preset Filters
+    function applyPolicyPreset(preset) {
+      currentPolicyPreset = preset;
+      document.querySelectorAll('.policy-pill').forEach(p => p.classList.remove('active'));
+
+      const mapping = {
+        'ALL': 'pill-all',
+        'EXTREME_THIRST': 'pill-extreme',
+        'CRITICAL_DEFICIT': 'pill-deficit',
+        'MILLET_PRIORITY': 'pill-millet',
+        'FOREST_BUFFER': 'pill-buffer',
+        'COASTAL_SURPLUS': 'pill-surplus'
+      };
+      const activeEl = document.getElementById(mapping[preset]);
+      if (activeEl) activeEl.classList.add('active');
+
+      if (currentMode !== 'block') switchMode('block');
+      renderActiveLayer();
+      playTone(550, 'triangle', 0.08);
+
+      if (blockLayer && blockLayer.getLayers().length > 0) {
+        map.fitBounds(blockLayer.getBounds(), { padding: [20, 20] });
+      }
+    }
+
+    function filterByPolicyPreset(features) {
+      if (currentPolicyPreset === 'ALL') return features;
+
+      return features.filter(f => {
+        const p = f.properties;
+        const et = p.annual_et0_mm || 0;
+        const bal = p.water_balance_mm || 0;
+
+        if (currentPolicyPreset === 'EXTREME_THIRST') return et >= 1600;
+        if (currentPolicyPreset === 'CRITICAL_DEFICIT') return bal <= -75;
+        if (currentPolicyPreset === 'MILLET_PRIORITY') return et >= 1580 && bal < 0;
+        if (currentPolicyPreset === 'FOREST_BUFFER') return et <= 1450;
+        if (currentPolicyPreset === 'COASTAL_SURPLUS') return bal >= 250;
+        return true;
+      });
+    }
+
+    function getColor(val, min, max, colors) {
+      const ratio = Math.max(0, Math.min(1, (val - min) / (max - min)));
+      const idx = ratio * (colors.length - 1);
+      return colors[Math.round(idx)];
+    }
+
+    function getFeatureVal(feature) {
+      const props = feature.properties;
+      if (props.years && props.years[currentYear]) {
+        return props.years[currentYear][currentMetric] || 0;
+      }
+      return props[currentMetric] || 0;
+    }
+
+    function styleFeature(feature) {
+      const cfg = metricConfigs[currentMetric];
+      const val = getFeatureVal(feature);
+      const isBlock = currentMode === 'block';
+      return {
+        fillColor: getColor(val, cfg.min, cfg.max, cfg.colorScale),
+        weight: isBlock ? 0.9 : 1.6,
+        opacity: 1,
+        color: isBlock ? '#475569' : '#0f172a',
+        fillOpacity: layerOpacity
+      };
+    }
+
+    function renderActiveLayer() {
+      if (districtLayer) map.removeLayer(districtLayer);
+      if (blockLayer) map.removeLayer(blockLayer);
+
+      const targetData = currentMode === 'district' ? districtGeoData : blockGeoData;
+      if (!targetData) return;
+
+      let displayFeatures = targetData.features;
+      if (currentMode === 'block') {
+        if (currentDistrictFilter !== 'ALL') {
+          displayFeatures = displayFeatures.filter(f => (f.properties.district || f.properties.dtname) === currentDistrictFilter);
+        }
+        displayFeatures = filterByPolicyPreset(displayFeatures);
+      }
+
+      const layer = L.geoJSON({ type: 'FeatureCollection', features: displayFeatures }, {
+        style: styleFeature,
+        onEachFeature: function(feature, l) {
+          const p = feature.properties;
+          const name = p.block ? `${p.block} (${p.district})` : (p.district || p.dtname);
+          const val = getFeatureVal(feature);
+          const unit = metricConfigs[currentMetric].unit;
+
+          l.bindTooltip(`<strong>${name}</strong><br>${metricConfigs[currentMetric].label}: <b>${val} ${unit}</b>`, {
+            sticky: true
+          });
+
+          l.on({
+            mouseover: function(e) {
+              const tgt = e.target;
+              tgt.setStyle({ weight: 3, color: '#ffffff', fillOpacity: 0.98 });
+              tgt.bringToFront();
+              updateDetailCard(p);
+            },
+            mouseout: function(e) {
+              layer.resetStyle(e.target);
+            },
+            click: function(e) {
+              map.fitBounds(e.target.getBounds());
+              updateDetailCard(p);
+              playTone(700, 'sine', 0.08);
+
+              // Confetti celebration if water surplus > +350mm
+              if (p.water_balance_mm > 350) {
+                confetti({ particleCount: 35, spread: 60, origin: { y: 0.7 } });
+              }
+
+              if (p.block) {
+                const bselect = document.getElementById('block-namewise-select');
+                bselect.value = `${p.block}|${p.district}`;
+              }
+            }
+          });
+        }
+      }).addTo(map);
+
+      if (currentMode === 'district') {
+        districtLayer = layer;
+      } else {
+        blockLayer = layer;
+      }
+
+      updateLegend();
+      buildLeaderboard(displayFeatures);
+
+      if (displayFeatures.length > 0 && !currentSelectedProps) {
+        updateDetailCard(displayFeatures[0].properties);
+      }
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('btn-mode-district').classList.toggle('active', mode === 'district');
+      document.getElementById('btn-mode-block').classList.toggle('active', mode === 'block');
+      document.getElementById('district-filter-group').style.display = mode === 'block' ? 'block' : 'none';
+      renderActiveLayer();
+      playTone(500, 'sine', 0.06);
+    }
+
+    function updateFilters() {
+      currentYear = document.getElementById('year-select').value;
+      currentMetric = document.getElementById('metric-select').value;
+      renderActiveLayer();
+      if (currentSelectedProps) updateDetailCard(currentSelectedProps);
+      runCropSimulation();
+    }
+
+    function filterBlocksByDistrict() {
+      currentDistrictFilter = document.getElementById('district-filter-select').value;
+      populateBlockDropdown();
+      renderActiveLayer();
+      if (currentDistrictFilter !== 'ALL' && blockLayer) {
+        map.fitBounds(blockLayer.getBounds());
+      }
+    }
+
+    function updateLegend() {
+      const cfg = metricConfigs[currentMetric];
+      document.getElementById('legend-metric-title').textContent = cfg.label;
+      document.getElementById('legend-gradient').style.background = cfg.cssGradient;
+      document.getElementById('legend-min').textContent = `${cfg.min} ${cfg.unit}`;
+      document.getElementById('legend-mid').textContent = `${((cfg.min + cfg.max)/2).toFixed(1)} ${cfg.unit}`;
+      document.getElementById('legend-max').textContent = `${cfg.max} ${cfg.unit}`;
+    }
+
+    // Detail Profile & Advisory Updating
+    function updateDetailCard(props) {
+      currentSelectedProps = props;
+      const isBlock = !!props.block;
+      const name = isBlock ? `${props.block} Block` : `${props.district || props.dtname} District`;
+      document.getElementById('info-name').textContent = name;
+      document.getElementById('info-badge').textContent = isBlock ? `District: ${props.district}` : 'District HQ';
+
+      const yearData = (props.years && props.years[currentYear]) || props;
+      const normalData = (props.years && props.years['mean_10yr']) || props;
+      const unit = metricConfigs[currentMetric].unit;
+
+      document.getElementById('stat-selected-val').textContent = `${yearData[currentMetric] !== undefined ? yearData[currentMetric] : '--'} ${unit}`;
+      document.getElementById('stat-normal-val').textContent = `${normalData[currentMetric] !== undefined ? normalData[currentMetric] : '--'} ${unit}`;
+      document.getElementById('stat-summer-val').textContent = `${yearData.summer_et0_mm || '--'} mm`;
+      document.getElementById('stat-monsoon-val').textContent = `${yearData.monsoon_et0_mm || '--'} mm`;
+      document.getElementById('stat-rain-val').textContent = `${yearData.annual_precip_mm || '--'} mm`;
+      
+      const balEl = document.getElementById('stat-balance-val');
+      balEl.textContent = `${yearData.water_balance_mm || '--'} mm`;
+      balEl.style.color = (yearData.water_balance_mm < 0) ? '#dc2626' : '#2563eb';
+      
+      document.getElementById('stat-aridity-val').textContent = yearData.aridity_index || '--';
+
+      // Update Personality Badge & Thirst Gauge
+      updatePersonalityBadge(props);
+
+      // Update Decision Advisory
+      updateAdvisoryText(props);
+
+      // Update Simulator Header
+      document.getElementById('sim-current-block-name').textContent = props.block || props.district;
+      runCropSimulation();
+
+      updateTrendChart(props);
+      updateDossierContent(props);
+    }
+
+    function updatePersonalityBadge(props) {
+      const et = props.annual_et0_mm || 0;
+      const bal = props.water_balance_mm || 0;
+      const badgeEl = document.getElementById('info-personality-badge');
+      const iconsEl = document.getElementById('thirst-icons');
+
+      badgeEl.className = 'personality-badge ';
+
+      if (et >= 1610) {
+        badgeEl.classList.add('badge-crucible');
+        badgeEl.innerHTML = '<i class="fa-solid fa-fire-flame-curved"></i> Solar Crucible Belt';
+        iconsEl.innerHTML = '🔥🔥🔥🔥🔥 <span style="font-size:10px; font-weight:800; color:#dc2626;">Severe</span>';
+      } else if (bal <= -50) {
+        badgeEl.classList.add('badge-millet');
+        badgeEl.innerHTML = '<i class="fa-solid fa-wheat-awn"></i> Millet Priority Heartland';
+        iconsEl.innerHTML = '🔥🔥🔥🔥 <span style="font-size:10px; font-weight:700; color:#ea580c;">High</span>';
+      } else if (bal >= 250) {
+        badgeEl.classList.add('badge-delta');
+        badgeEl.innerHTML = '<i class="fa-solid fa-water"></i> Coastal Delta Sponge';
+        iconsEl.innerHTML = '💧💧💧💧💧 <span style="font-size:10px; font-weight:800; color:#0284c7;">Surplus</span>';
+      } else if (et <= 1450) {
+        badgeEl.classList.add('badge-shield');
+        badgeEl.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Highland Mist Shield';
+        iconsEl.innerHTML = '🌿🌿🌿🌿🌿 <span style="font-size:10px; font-weight:800; color:#166534;">Low Loss</span>';
+      } else {
+        badgeEl.classList.add('badge-basin');
+        badgeEl.innerHTML = '<i class="fa-solid fa-mountain-sun"></i> Transitional River Basin';
+        iconsEl.innerHTML = '🔥🔥🔥 <span style="font-size:10px; font-weight:700; color:#d97706;">Moderate</span>';
+      }
+    }
+
+    function updateAdvisoryText(props) {
+      const textEl = document.getElementById('info-advisory-text');
+      const et = props.annual_et0_mm || 0;
+      const bal = props.water_balance_mm || 0;
+      const name = props.block || props.district;
+
+      if (et >= 1600) {
+        textEl.innerHTML = `<b>High Evaporative Zone:</b> In <b>${name}</b>, summer evaporation exceeds 7.8 mm/day. <b>Action:</b> Enforce Boro paddy phase-out under Odisha Millet Mission; mandate night canal irrigation (19:00–06:00) and farm ponds excavated to ≥3.5m depth with bamboo windbreaks.`;
+      } else if (bal < 0) {
+        textEl.innerHTML = `<b>Net Moisture Deficit Zone:</b> Annual precipitation falls short of atmospheric thirst by ${Math.abs(bal)} mm. <b>Action:</b> Prioritize micro-irrigation (drip/sprinkler) for pulses/oilseeds; restrict deep tube-well permits.`;
+      } else if (bal > 250) {
+        textEl.innerHTML = `<b>Water Surplus Zone:</b> High precipitation provides +${bal} mm net surplus. <b>Action:</b> Focus on drainage efficiency, saline flood barrier sluice gates, and waterlogging prevention rather than drought mitigation.`;
+      } else {
+        textEl.innerHTML = `<b>Equilibrium Zone:</b> Balanced evaporative demand. <b>Action:</b> Optimize canal tail-end release turns and incentivize farm pond rain-harvesting cascades.`;
+      }
+    }
+
+    // TAB 2: CROP SIMULATOR
+    function runCropSimulation() {
+      if (!currentSelectedProps) return;
+      const cropKey = document.getElementById('sim-crop-select').value;
+      const acres = parseFloat(document.getElementById('sim-area-slider').value);
+      document.getElementById('sim-area-val').textContent = `${acres} Acres`;
+
+      const crop = cropCoefficients[cropKey];
+      const annualEt0 = currentSelectedProps.annual_et0_mm || 1509;
+      const summerEt0 = currentSelectedProps.summer_et0_mm || 520;
+      
+      // Use summer ET0 for summer crops, else annual proportion
+      const baseEt0 = (cropKey === 'boro_paddy' || cropKey === 'mandia_ragi' || cropKey === 'greengram' || cropKey === 'sesamum') ? summerEt0 : annualEt0;
+
+      const etcMm = (baseEt0 * crop.kc).toFixed(1);
+      // 1 acre = 4046.86 m2. 1 mm over 1 acre = 4.04686 m3 = 4,046.86 Liters
+      const volM3 = Math.round(etcMm * acres * 4.04686);
+      const millionLiters = (volM3 / 1000).toFixed(2);
+
+      document.getElementById('sim-etc-val').textContent = `${etcMm} mm`;
+      document.getElementById('sim-vol-m3').textContent = `${volM3.toLocaleString()} m³`;
+      document.getElementById('sim-consumption-liters').textContent = `${millionLiters} Million L`;
+
+      // Tank Graphic Level
+      const tankLiquid = document.getElementById('sim-water-liquid');
+      const tankStatus = document.getElementById('sim-tank-status');
+      const pct = Math.min(100, Math.max(15, (etcMm / 700) * 100));
+      tankLiquid.style.height = `${pct}%`;
+
+      if (pct > 75) {
+        tankLiquid.style.background = 'linear-gradient(180deg, #f87171 0%, #dc2626 100%)';
+        tankStatus.textContent = 'Severe Reservoir Drawdown';
+        tankStatus.style.color = '#dc2626';
+      } else if (pct > 50) {
+        tankLiquid.style.background = 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)';
+        tankStatus.textContent = 'Moderate Water Demand';
+        tankStatus.style.color = '#d97706';
+      } else {
+        tankLiquid.style.background = 'linear-gradient(180deg, #34d399 0%, #059669 100%)';
+        tankStatus.textContent = 'Eco-Friendly Low Demand';
+        tankStatus.style.color = '#059669';
+      }
+
+      // Water Saving Calculation vs Boro Paddy
+      const boroEtc = summerEt0 * 1.20;
+      const boroVolM3 = Math.round(boroEtc * acres * 4.04686);
+      const savedM3 = boroVolM3 - volM3;
+      const savedMillionL = (savedM3 / 1000).toFixed(2);
+
+      const banner = document.getElementById('sim-saving-banner');
+      const savingText = document.getElementById('sim-saving-text');
+      if (cropKey === 'boro_paddy') {
+        banner.style.background = '#fee2e2';
+        banner.style.borderColor = '#fca5a5';
+        banner.style.color = '#991b1b';
+        savingText.innerHTML = `<b>Baseline High-Water Consumer:</b> Consumes ~${boroVolM3.toLocaleString()} m³ freshwater. Switching to Mandia/Ragi would save ~${((boroVolM3 * 0.417)/1000).toFixed(2)} Million Liters!`;
+      } else if (savedM3 > 0) {
+        banner.style.background = '#dcfce7';
+        banner.style.borderColor = '#86efac';
+        banner.style.color = '#166534';
+        savingText.innerHTML = `<b>Freshwater Saved vs Summer Paddy:</b> +${savedM3.toLocaleString()} m³ (<b>${savedMillionL} Million Liters</b> saved for community reserves!)`;
+      } else {
+        banner.style.background = '#eff6ff';
+        banner.style.borderColor = '#bfdbfe';
+        banner.style.color = '#1e4ed8';
+        savingText.textContent = `Balanced commercial water requirement.`;
+      }
+    }
+
+    // TAB 3: DUAL BLOCK DUEL
+    function populateDuelSelectors() {
+      if (!blockGeoData) return;
+      const selA = document.getElementById('duel-select-a');
+      const selB = document.getElementById('duel-select-b');
+      selA.innerHTML = ''; selB.innerHTML = '';
+
+      allBlocksList.forEach(b => {
+        const optA = document.createElement('option');
+        optA.value = `${b.block}|${b.district}`;
+        optA.textContent = b.label;
+        selA.appendChild(optA);
+
+        const optB = document.createElement('option');
+        optB.value = `${b.block}|${b.district}`;
+        optB.textContent = b.label;
+        selB.appendChild(optB);
+      });
+
+      // Default Sohela (Bargarh) vs Samakhunta (Mayurbhanj)
+      selA.value = 'Sohela|Bargarh';
+      selB.value = 'Samakhunta|Mayurbhanj';
+      runDuelComparison();
+    }
+
+    function runDuelComparison() {
+      if (!blockGeoData) return;
+      const valA = document.getElementById('duel-select-a').value;
+      const valB = document.getElementById('duel-select-b').value;
+      if (!valA || !valB) return;
+
+      const [nameA, distA] = valA.split('|');
+      const [nameB, distB] = valB.split('|');
+
+      const featA = blockGeoData.features.find(f => f.properties.block === nameA && f.properties.district === distA);
+      const featB = blockGeoData.features.find(f => f.properties.block === nameB && f.properties.district === distB);
+      if (!featA || !featB) return;
+
+      const pA = featA.properties;
+      const pB = featB.properties;
+
+      // Update Radar
+      if (duelRadarChart) {
+        duelRadarChart.data.datasets[0].label = `${pA.block} (${pA.district})`;
+        duelRadarChart.data.datasets[0].data = [pA.annual_et0_mm, pA.summer_et0_mm * 2.8, pA.monsoon_et0_mm * 3.1, pA.annual_precip_mm * 0.9, (pA.water_balance_mm + 400) * 2];
+        duelRadarChart.data.datasets[1].label = `${pB.block} (${pB.district})`;
+        duelRadarChart.data.datasets[1].data = [pB.annual_et0_mm, pB.summer_et0_mm * 2.8, pB.monsoon_et0_mm * 3.1, pB.annual_precip_mm * 0.9, (pB.water_balance_mm + 400) * 2];
+        duelRadarChart.update();
+      }
+
+      // Verdict Text
+      const etDiff = (pA.annual_et0_mm - pB.annual_et0_mm).toFixed(1);
+      const balDiff = (pA.water_balance_mm - pB.water_balance_mm).toFixed(1);
+      const verdictEl = document.getElementById('duel-verdict-box');
+
+      verdictEl.innerHTML = `
+        <b>Climatological Head-to-Head:</b><br>
+        &bull; <b>${pA.block}</b> experiences <b>${Math.abs(etDiff)} mm ${etDiff >= 0 ? 'higher' : 'lower'}</b> annual evaporative demand than <b>${pB.block}</b>.<br>
+        &bull; Net moisture balance differential is <b>${balDiff} mm</b>.<br>
+        &bull; <b>Recommendation:</b> ${pA.annual_et0_mm > pB.annual_et0_mm ? pA.block : pB.block} requires prioritized micro-irrigation allocation and stricter summer paddy phase-out.
+      `;
+      playTone(580, 'sine', 0.06);
+    }
+
+    // 🎮 TIME-LAPSE PLAYER
+    function toggleTimeLapse() {
+      isPlayingTimeLapse = !isPlayingTimeLapse;
+      const icon = document.getElementById('tl-play-icon');
+      if (isPlayingTimeLapse) {
+        icon.className = 'fa-solid fa-pause';
+        playTone(600, 'sine', 0.1);
+        timeLapseInterval = setInterval(stepTimeLapse, 1200);
+      } else {
+        icon.className = 'fa-solid fa-play';
+        clearInterval(timeLapseInterval);
+      }
+    }
+
+    function stepTimeLapse() {
+      const slider = document.getElementById('tl-slider');
+      let nextIdx = (parseInt(slider.value) + 1) % timeLapseYears.length;
+      slider.value = nextIdx;
+      scrubTimeLapse(nextIdx);
+    }
+
+    function scrubTimeLapse(idx) {
+      const year = timeLapseYears[idx];
+      document.getElementById('year-select').value = year;
+      document.getElementById('tl-year-display').textContent = year === 'mean_10yr' ? '10-Yr Normal' : `Year ${year}`;
+      document.getElementById('tl-climate-note').textContent = timeLapseNotes[year];
+      playTone(400 + idx * 25, 'sine', 0.04);
+      updateFilters();
+    }
+
+    // Tab Switching
+    function switchSidebarTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      playTone(520, 'sine', 0.05);
+
+      if (tabId === 'duel' && duelRadarChart) {
+        setTimeout(() => duelRadarChart.resize(), 100);
+      }
+    }
+
+    // Chart Inits
+    function initCharts() {
+      // Line Trend Chart
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026'],
+          datasets: [
+            {
+              label: 'Annual ET₀ (mm)',
+              data: [],
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249, 115, 22, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Rainfall (mm)',
+              data: [],
+              borderColor: '#3b82f6',
+              borderWidth: 1.8,
+              borderDash: [4, 4],
+              tension: 0.3,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9.5 } } } },
+          scales: {
+            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+
+      // Radar Duel Chart
+      const radarCtx = document.getElementById('duelRadarChart').getContext('2d');
+      duelRadarChart = new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+          labels: ['Annual ET₀', 'Summer Stress', 'Monsoon ET₀', 'Rainfall', 'Water Balance'],
+          datasets: [
+            {
+              label: 'Block Alpha',
+              data: [1636, 1635, 1420, 1588, 700],
+              borderColor: '#ea580c',
+              backgroundColor: 'rgba(234, 88, 12, 0.2)',
+              borderWidth: 2
+            },
+            {
+              label: 'Block Beta',
+              data: [1363, 1360, 1210, 1864, 1200],
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.2)',
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9.5 } } } },
+          scales: {
+            r: { ticks: { display: false }, grid: { color: '#e2e8f0' }, pointLabels: { font: { size: 9.5, weight: 600 } } }
+          }
+        }
+      });
+    }
+
+    function updateTrendChart(props) {
+      if (!trendChart || !props.years) return;
+      const yearsList = ['2016','2017','2018','2019','2020','2021','2022','2023','2024','2025','2026'];
+      const etVals = yearsList.map(y => props.years[y] ? props.years[y].annual_et0_mm : null);
+      const pVals = yearsList.map(y => props.years[y] ? props.years[y].annual_precip_mm : null);
+
+      trendChart.data.datasets[0].data = etVals;
+      trendChart.data.datasets[1].data = pVals;
+      trendChart.update();
+    }
+
+    function buildLeaderboard(features) {
+      const tbody = document.querySelector('#leaderboard-table tbody');
+      tbody.innerHTML = '';
+      
+      const sorted = [...features].sort((a,b) => getFeatureVal(b) - getFeatureVal(a));
+
+      if (sorted.length > 0) {
+        const top = sorted[0].properties;
+        const bot = sorted[sorted.length - 1].properties;
+        const meanVal = (sorted.reduce((acc, f) => acc + getFeatureVal(f), 0) / sorted.length).toFixed(1);
+
+        document.getElementById('kpi-mean-et').textContent = `${meanVal} mm`;
+        document.getElementById('kpi-highest-name').textContent = top.block ? `${top.block} (${top.district})` : top.district;
+        document.getElementById('kpi-highest-val').textContent = `${getFeatureVal(sorted[0])} mm`;
+        document.getElementById('kpi-lowest-name').textContent = bot.block ? `${bot.block} (${bot.district})` : bot.district;
+        document.getElementById('kpi-lowest-val').textContent = `${getFeatureVal(sorted[sorted.length - 1])} mm`;
+      }
+
+      sorted.slice(0, 60).forEach((feat, idx) => {
+        const p = feat.properties;
+        const dname = p.block ? `${p.block}` : (p.district || p.dtname);
+        const val = getFeatureVal(feat);
+        const yData = (p.years && p.years[currentYear]) || p;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 700; color: #64748b;">${idx + 1}</td>
+          <td style="font-weight: 600;">${dname}</td>
+          <td style="font-family: monospace; font-weight: 700;">${val}</td>
+          <td style="font-family: monospace; color: ${(yData.water_balance_mm < 0) ? '#dc2626' : '#2563eb'};">${yData.water_balance_mm || '--'}</td>
+        `;
+        tr.onclick = () => {
+          updateDetailCard(p);
+          playTone(600, 'sine', 0.05);
+          if (p.block) {
+            const bselect = document.getElementById('block-namewise-select');
+            bselect.value = `${p.block}|${p.district}`;
+          }
+        };
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Search Autocomplete
+    function handleSearch(query) {
+      const resultsEl = document.getElementById('search-results');
+      if (!query || query.trim().length < 2) {
+        resultsEl.style.display = 'none';
+        return;
+      }
+      const q = query.trim().toLowerCase();
+      const matches = [];
+
+      if (districtGeoData) {
+        districtGeoData.features.forEach(f => {
+          const dname = f.properties.district || f.properties.dtname;
+          if (dname.toLowerCase().includes(q)) matches.push({ type: 'district', name: dname, feature: f });
+        });
+      }
+
+      if (blockGeoData) {
+        blockGeoData.features.forEach(f => {
+          const bname = f.properties.block;
+          const dname = f.properties.district;
+          if (bname.toLowerCase().includes(q)) matches.push({ type: 'block', name: `${bname} (${dname})`, feature: f });
+        });
+      }
+
+      if (matches.length === 0) {
+        resultsEl.innerHTML = '<div style="padding: 8px 12px; color: #94a3b8; font-size: 11px;">No matching location</div>';
+        resultsEl.style.display = 'block';
+        return;
+      }
+
+      resultsEl.innerHTML = '';
+      matches.slice(0, 8).forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'search-item';
+        item.innerHTML = `<span><strong>${m.name}</strong></span><span style="color: #94a3b8; font-size: 10px;">${m.type.toUpperCase()}</span>`;
+        item.onclick = () => {
+          resultsEl.style.display = 'none';
+          document.getElementById('quick-search').value = m.name;
+          
+          if (m.type === 'block' && currentMode !== 'block') switchMode('block');
+          else if (m.type === 'district' && currentMode !== 'district') switchMode('district');
+
+          const geom = L.geoJSON(m.feature);
+          map.fitBounds(geom.getBounds());
+          updateDetailCard(m.feature.properties);
+
+          if (m.feature.properties.block) {
+            const bselect = document.getElementById('block-namewise-select');
+            bselect.value = `${m.feature.properties.block}|${m.feature.properties.district}`;
+          }
+        };
+        resultsEl.appendChild(item);
+      });
+      resultsEl.style.display = 'block';
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-group')) {
+        document.getElementById('search-results').style.display = 'none';
+      }
+    });
+
+    // DOSSIER UPDATE
+    function updateDossierContent(p) {
+      const isBlock = !!p.block;
+      document.getElementById('dos-block-title').textContent = isBlock ? `${p.block.toUpperCase()} COMMUNITY BLOCK INTERVENTION DOSSIER` : `${(p.district || p.dtname).toUpperCase()} DISTRICT INTERVENTION DOSSIER`;
+      document.getElementById('dos-name-val').textContent = isBlock ? `${p.block} (${p.district} District)` : (p.district || p.dtname);
+      document.getElementById('dos-et-val').textContent = `${p.annual_et0_mm || '--'} mm/year`;
+      document.getElementById('dos-rain-val').textContent = `${p.annual_precip_mm || '--'} mm/year`;
+      document.getElementById('dos-summer-val').textContent = `${p.summer_et0_mm || '--'} mm`;
+      document.getElementById('dos-balance-val').textContent = `${p.water_balance_mm || '--'} mm`;
+
+      const listEl = document.getElementById('dos-directives-list');
+      const tierEl = document.getElementById('dos-tier-val');
+
+      if ((p.annual_et0_mm || 0) >= 1600) {
+        tierEl.textContent = 'Tier-1 Extreme Evaporative Deficit';
+        tierEl.style.color = '#dc2626';
+        listEl.innerHTML = `
+          <li><b>Canal Scheduling:</b> Mandate +20% release adjustment for tail-end blocks to compensate for high unlined canal evaporation losses during March–May.</li>
+          <li><b>Crop Substitution:</b> Ban summer Boro paddy; enforce 100% saturation of Mandia (Finger Millet / Ragi) and Greengram under Odisha Millet Mission.</li>
+          <li><b>Water Harvesting Standards:</b> Mandate minimum 3.5 to 4.0 meters excavation depth for all MGNREGS farm ponds with Southern/Western vegetative windbreaks.</li>
+          <li><b>Groundwater Extraction:</b> Freeze permits for new commercial deep tube-well energization; make drip fertigation mandatory.</li>
+        `;
+      } else if ((p.water_balance_mm || 0) < 0) {
+        tierEl.textContent = 'Tier-2 Net Moisture Deficit';
+        tierEl.style.color = '#ea580c';
+        listEl.innerHTML = `
+          <li><b>Canal Scheduling:</b> Implement strict Warabandi rotational turns with nocturnal release schedules.</li>
+          <li><b>Crop Substitution:</b> Transition 40% of summer cropped acreage to pulses and oilseeds (Mustard/Til).</li>
+          <li><b>Water Harvesting:</b> Construct cascade check dams on second-order streams to boost groundwater recharge.</li>
+        `;
+      } else if ((p.water_balance_mm || 0) > 250) {
+        tierEl.textContent = 'Tier-4 High Coastal Surplus';
+        tierEl.style.color = '#0284c7';
+        listEl.innerHTML = `
+          <li><b>Drainage & Flood Management:</b> Modernize sluice gates to prevent estuarine saline water ingress and accelerate post-monsoon drainage.</li>
+          <li><b>Integrated Farming:</b> Promote freshwater paddy-cum-fish culture systems.</li>
+        `;
+      } else {
+        tierEl.textContent = 'Tier-3 River Basin Equilibrium';
+        tierEl.style.color = '#166534';
+        listEl.innerHTML = `
+          <li><b>Efficiency Optimization:</b> Modernize minor irrigation flow channels; incentivize solar pump drip irrigation.</li>
+        `;
+      }
+    }
+
+    // Modal Handlers
+    function openPolicyModal() { document.getElementById('policy-modal').style.display = 'flex'; playTone(540, 'sine', 0.08); }
+    function closePolicyModal() { document.getElementById('policy-modal').style.display = 'none'; }
+    function openAtlasModal() { document.getElementById('atlas-modal').style.display = 'flex'; resetAtlasZoom(); playTone(540, 'sine', 0.08); }
+    function closeAtlasModal() { document.getElementById('atlas-modal').style.display = 'none'; }
+    function openDossierModal() { document.getElementById('dossier-modal').style.display = 'flex'; playTone(540, 'sine', 0.08); }
+    function closeDossierModal() { document.getElementById('dossier-modal').style.display = 'none'; }
+
+    function zoomAtlas(factor) {
+      atlasScale = Math.min(4.0, Math.max(0.6, atlasScale * factor));
+      document.getElementById('atlas-img').style.transform = `scale(${atlasScale})`;
+    }
+    function resetAtlasZoom() {
+      atlasScale = 1.0;
+      document.getElementById('atlas-img').style.transform = `scale(1)`;
+    }
+
+    function closeModalOnOverlay(e, id) {
+      if (e.target.id === id) document.getElementById(id).style.display = 'none';
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>
